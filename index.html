@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✿ Something Magic ✿</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: 'Quicksand', 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  /* ─── Question Screen ─── */
+  #question-screen {
+    text-align: center;
+    animation: fadeInSoft 1.2s ease;
+  }
+
+  #question-screen h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    margin-bottom: 0.4em;
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  #question-screen p {
+    font-size: 1.15rem;
+    color: #bbb;
+    margin-bottom: 2em;
+  }
+
+  .btn-row { display: flex; gap: 1.2rem; justify-content: center; }
+
+  .btn {
+    padding: 0.75em 2.4em;
+    border: none;
+    border-radius: 50px;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+
+  .btn:hover { transform: scale(1.07); }
+
+  .btn-yes {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: #fff;
+    box-shadow: 0 4px 24px rgba(240,147,251,0.35);
+  }
+
+  .btn-no {
+    background: rgba(255,255,255,0.08);
+    color: #ccc;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .btn-no:hover { background: rgba(255,255,255,0.14); }
+
+  /* ─── Magic Screen (flower + hearts) ─── */
+  #magic-screen {
+    display: none;
+    width: 100%;
+    height: 100vh;
+    position: relative;
+  }
+
+  canvas#fireworks {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  #flower-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* ─── Missed Screen ─── */
+  #missed-screen {
+    display: none;
+    text-align: center;
+    animation: fadeInSoft 0.8s ease;
+  }
+
+  #missed-screen h1 {
+    font-size: 2.2rem;
+    color: #888;
+    margin-bottom: 0.5em;
+  }
+
+  #missed-screen p {
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 2em;
+  }
+
+  #missed-screen .btn {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: #fff;
+    box-shadow: 0 4px 24px rgba(240,147,251,0.25);
+  }
+
+  /* ─── Sparkle dots in background ─── */
+  .stars {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes fadeInSoft {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── Mobile / Responsive ─── */
+  html, body {
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  @media (max-width: 600px) {
+    #question-screen h1 { font-size: 1.7rem; }
+    #question-screen p  { font-size: 1rem; margin-bottom: 1.6em; }
+
+    .btn {
+      padding: 0.85em 2.2em;
+      font-size: 1rem;
+      min-height: 48px;          /* comfortable tap target */
+    }
+
+    .btn-row { gap: 0.9rem; }
+
+    #flower-wrap {
+      width: 240px;
+      height: 380px;
+    }
+
+    #missed-screen h1 { font-size: 1.6rem; }
+    #missed-screen p  { font-size: 1rem; }
+  }
+
+  @media (max-width: 380px) {
+    #question-screen h1 { font-size: 1.4rem; }
+    .btn { padding: 0.75em 1.6em; font-size: 0.95rem; }
+    #flower-wrap { width: 200px; height: 320px; }
+  }
+
+  /* prevent pull-to-refresh on mobile */
+  body { overscroll-behavior-y: contain; }
+</style>
+</head>
+<body>
+
+<!-- tiny ambient sparkles -->
+<canvas class="stars" id="starsCanvas"></canvas>
+
+<!-- ── Screen 1: Question ── -->
+<div id="question-screen">
+  <h1>✨ Hey you ✨</h1>
+  <p>Do you want to see something magic?</p>
+  <div class="btn-row">
+    <button class="btn btn-yes" onclick="showMagic()">Yes 💖</button>
+    <button class="btn btn-no"  onclick="showMissed()">No</button>
+  </div>
+</div>
+
+<!-- ── Screen 2: Magic ── -->
+<div id="magic-screen">
+  <canvas id="fireworks"></canvas>
+  <svg id="flower-wrap" width="320" height="500" viewBox="0 0 320 500"></svg>
+</div>
+
+<!-- ── Screen 3: Missed ── -->
+<div id="missed-screen">
+  <h1>😢</h1>
+  <h1>You missed something beautiful…</h1>
+  <p>Maybe next time you'll say yes 💔</p>
+  <button class="btn" onclick="goBack()">Let me try again</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   Ambient star-field on the background
+   ═══════════════════════════════════════ */
+(function () {
+  const c = document.getElementById('starsCanvas');
+  const ctx = c.getContext('2d');
+  let stars = [];
+  function resize() { c.width = innerWidth; c.height = innerHeight; init(); }
+  function init() {
+    stars = [];
+    for (let i = 0; i < 90; i++) {
+      stars.push({ x: Math.random() * c.width, y: Math.random() * c.height,
+        r: Math.random() * 1.3 + 0.3, a: Math.random(), da: (Math.random() - 0.5) * 0.012 });
+    }
+  }
+  function draw() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    stars.forEach(s => {
+      s.a += s.da;
+      if (s.a > 1 || s.a < 0.15) s.da *= -1;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,220,250,${s.a})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+
+/* ═══════════════════════════════════════
+   Screen transitions
+   ═══════════════════════════════════════ */
+function showMagic() {
+  document.getElementById('question-screen').style.display = 'none';
+  const ms = document.getElementById('magic-screen');
+  ms.style.display = 'block';
+  growFlower();
+  startHeartFireworks();
+}
+
+function showMissed() {
+  document.getElementById('question-screen').style.display = 'none';
+  document.getElementById('missed-screen').style.display = 'block';
+}
+
+function goBack() {
+  document.getElementById('missed-screen').style.display = 'none';
+  const qs = document.getElementById('question-screen');
+  qs.style.display = 'block';
+  qs.style.animation = 'none';
+  void qs.offsetHeight;          // reflow
+  qs.style.animation = 'fadeInSoft 0.8s ease';
+}
+
+/* ═══════════════════════════════════════
+   SVG Flower grow animation
+   ═══════════════════════════════════════ */
+function growFlower() {
+  const svg = document.getElementById('flower-wrap');
+  svg.innerHTML = '';
+
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // ── Stem ──
+  const stem = document.createElementNS(ns, 'line');
+  stem.setAttribute('x1', 160); stem.setAttribute('y1', 500);
+  stem.setAttribute('x2', 160); stem.setAttribute('y2', 500);
+  stem.setAttribute('stroke', '#5cb85c');
+  stem.setAttribute('stroke-width', 5);
+  stem.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(stem);
+
+  // ── Leaves ──
+  function makeLeaf(cx, cy, angle, delay) {
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('transform', `translate(${cx},${cy}) rotate(${angle})`);
+    g.style.opacity = 0;
+    const e = document.createElementNS(ns, 'ellipse');
+    e.setAttribute('cx', 0); e.setAttribute('cy', 0);
+    e.setAttribute('rx', 0); e.setAttribute('ry', 0);
+    e.setAttribute('fill', '#6fcf6f');
+    g.appendChild(e);
+    svg.appendChild(g);
+    return { g, e, delay };
+  }
+
+  const leaves = [
+    makeLeaf(160, 400, -40, 800),
+    makeLeaf(160, 360, 35, 1000),
+    makeLeaf(160, 310, -30, 1200),
+  ];
+
+  // ── Petals ──
+  const petalColors = ['#ff7eb3','#ff5fa0','#ff9ec5','#f77fbe','#ffa0cc','#ff6b9d','#ff85b3','#ffaad4'];
+  const petalCount = 8;
+  const petals = [];
+  for (let i = 0; i < petalCount; i++) {
+    const angle = (360 / petalCount) * i;
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('transform', `translate(160,195)`);
+    g.style.opacity = 0;
+    const e = document.createElementNS(ns, 'ellipse');
+    e.setAttribute('cx', 0); e.setAttribute('cy', -28);
+    e.setAttribute('rx', 0); e.setAttribute('ry', 0);
+    e.setAttribute('fill', petalColors[i]);
+    e.setAttribute('transform', `rotate(${angle})`);
+    g.appendChild(e);
+    svg.appendChild(g);
+    petals.push({ g, e, angle, delay: 1600 + i * 100 });
+  }
+
+  // ── Center ──
+  const center = document.createElementNS(ns, 'circle');
+  center.setAttribute('cx', 160); center.setAttribute('cy', 195);
+  center.setAttribute('r', 0);
+  center.setAttribute('fill', '#ffe066');
+  center.style.opacity = 0;
+  svg.appendChild(center);
+
+  // ── Animate! ──
+  const start = performance.now();
+
+  function anim(now) {
+    const t = now - start;
+
+    // Stem grows 0→1600ms
+    const stemP = Math.min(t / 1600, 1);
+    const eased = 1 - Math.pow(1 - stemP, 3);
+    stem.setAttribute('y2', 500 - eased * 310);
+
+    // Leaves
+    leaves.forEach(l => {
+      const lt = Math.max(0, t - l.delay);
+      const p = Math.min(lt / 500, 1);
+      const ep = 1 - Math.pow(1 - p, 3);
+      l.g.style.opacity = p;
+      l.e.setAttribute('rx', ep * 22);
+      l.e.setAttribute('ry', ep * 10);
+    });
+
+    // Petals
+    petals.forEach(p => {
+      const pt = Math.max(0, t - p.delay);
+      const pr = Math.min(pt / 600, 1);
+      const ep = 1 - Math.pow(1 - pr, 3);
+      p.g.style.opacity = pr;
+      p.e.setAttribute('rx', ep * 18);
+      p.e.setAttribute('ry', ep * 36);
+    });
+
+    // Center
+    const ct = Math.max(0, t - 2500);
+    const cp = Math.min(ct / 400, 1);
+    center.style.opacity = cp;
+    center.setAttribute('r', cp * 16);
+
+    if (t < 3200) requestAnimationFrame(anim);
+  }
+
+  requestAnimationFrame(anim);
+}
+
+/* ═══════════════════════════════════════
+   Heart-shaped fireworks (canvas)
+   ═══════════════════════════════════════ */
+function startHeartFireworks() {
+  const canvas = document.getElementById('fireworks');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+  resize();
+  addEventListener('resize', resize);
+
+  const hearts = [];   // active heart bursts
+
+  // Heart parametric curve
+  function heartPoint(t, scale) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+    return { x: x * scale, y: y * scale };
+  }
+
+  // Create a heart burst
+  function spawnHeart(cx, cy) {
+    const hue = 320 + Math.random() * 50;        // pinks/reds
+    const scale = 1.8 + Math.random() * 2.2;
+    const particles = [];
+    const count = 80;
+    for (let i = 0; i < count; i++) {
+      const t = (i / count) * Math.PI * 2;
+      const { x, y } = heartPoint(t, scale);
+      particles.push({
+        x: cx, y: cy,
+        tx: cx + x, ty: cy + y,
+        r: 1.5 + Math.random() * 1.5,
+        progress: 0,
+        speed: 0.012 + Math.random() * 0.008,
+        hue: hue + Math.random() * 20 - 10,
+        alpha: 1,
+        trail: []
+      });
+    }
+    hearts.push({ particles, age: 0 });
+  }
+
+  // Spawn hearts periodically
+  let spawnTimer = 0;
+  function maybeSpawn(dt) {
+    spawnTimer += dt;
+    if (spawnTimer > 800) {       // new heart every ~0.8s
+      spawnTimer = 0;
+      const cx = W * 0.15 + Math.random() * W * 0.7;
+      const cy = H * 0.1 + Math.random() * H * 0.45;
+      spawnHeart(cx, cy);
+    }
+  }
+
+  // Also spawn first ones quickly
+  setTimeout(() => spawnHeart(W * 0.3, H * 0.3), 300);
+  setTimeout(() => spawnHeart(W * 0.7, H * 0.25), 700);
+  setTimeout(() => spawnHeart(W * 0.5, H * 0.15), 1200);
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = now - last;
+    last = now;
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(10,10,10,0.18)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+
+    maybeSpawn(dt);
+
+    for (let h = hearts.length - 1; h >= 0; h--) {
+      const heart = hearts[h];
+      heart.age += dt;
+      let alive = false;
+
+      heart.particles.forEach(p => {
+        if (p.alpha <= 0) return;
+        alive = true;
+
+        p.progress = Math.min(p.progress + p.speed, 1);
+        const ease = 1 - Math.pow(1 - p.progress, 3);
+        const cx = p.x + (p.tx - p.x) * ease;
+        const cy = p.y + (p.ty - p.y) * ease;
+
+        // fade after reaching target
+        if (p.progress >= 1) {
+          p.alpha -= 0.012;
+        }
+
+        // trail
+        p.trail.push({ x: cx, y: cy, a: p.alpha });
+        if (p.trail.length > 8) p.trail.shift();
+
+        // draw trail
+        p.trail.forEach((tp, i) => {
+          const ta = tp.a * (i / p.trail.length) * 0.4;
+          ctx.beginPath();
+          ctx.arc(tp.x, tp.y, p.r * 0.6, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${p.hue},100%,72%,${ta})`;
+          ctx.fill();
+        });
+
+        // draw particle
+        ctx.beginPath();
+        ctx.arc(cx, cy, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue},100%,78%,${Math.max(0, p.alpha)})`;
+        ctx.fill();
+
+        // glow
+        ctx.beginPath();
+        ctx.arc(cx, cy, p.r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue},100%,65%,${Math.max(0, p.alpha * 0.15)})`;
+        ctx.fill();
+      });
+
+      if (!alive) hearts.splice(h, 1);
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
