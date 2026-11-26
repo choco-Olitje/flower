@@ -84,14 +84,22 @@
     z-index: 1;
   }
 
-  #flower-wrap {
+  .flower-container {
     position: absolute;
     bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 2;
     pointer-events: none;
   }
+
+  .flower-svg {
+    position: absolute;
+    bottom: 0;
+    pointer-events: none;
+  }
+
 
   /* ─── Missed Screen ─── */
   #missed-screen {
@@ -151,9 +159,8 @@
 
     .btn-row { gap: 0.9rem; }
 
-    #flower-wrap {
-      width: 240px;
-      height: 380px;
+    .flower-svg {
+      /* smaller on mobile */
     }
 
     #missed-screen h1 { font-size: 1.6rem; }
@@ -163,7 +170,6 @@
   @media (max-width: 380px) {
     #question-screen h1 { font-size: 1.4rem; }
     .btn { padding: 0.75em 1.6em; font-size: 0.95rem; }
-    #flower-wrap { width: 200px; height: 320px; }
   }
 
   /* prevent pull-to-refresh on mobile */
@@ -188,7 +194,7 @@
 <!-- ── Screen 2: Magic ── -->
 <div id="magic-screen">
   <canvas id="fireworks"></canvas>
-  <svg id="flower-wrap" width="320" height="500" viewBox="0 0 320 500"></svg>
+  <div class="flower-container" id="flower-container"></div>
 </div>
 
 <!-- ── Screen 3: Missed ── -->
@@ -239,7 +245,7 @@ function showMagic() {
   document.getElementById('question-screen').style.display = 'none';
   const ms = document.getElementById('magic-screen');
   ms.style.display = 'block';
-  growFlower();
+  growFlowers();
   startHeartFireworks();
 }
 
@@ -258,12 +264,40 @@ function goBack() {
 }
 
 /* ═══════════════════════════════════════
-   SVG Flower grow animation
+   SVG Flowers – multiple, with staggered growth
    ═══════════════════════════════════════ */
-function growFlower() {
-  const svg = document.getElementById('flower-wrap');
-  svg.innerHTML = '';
+function growFlowers() {
+  const container = document.getElementById('flower-container');
+  container.innerHTML = '';
 
+  // Define flower placements: x% position, scale, delay (ms), and color palette
+  const flowerDefs = [
+    { xPct: 50, scale: 1.0,  delay: 0,    colors: ['#ff7eb3','#ff5fa0','#ff9ec5','#f77fbe','#ffa0cc','#ff6b9d','#ff85b3','#ffaad4'] },
+    { xPct: 20, scale: 0.72, delay: 1200, colors: ['#ffb3d9','#ff80bf','#ff99cc','#ff66b2','#ffcce0','#ff4da6','#ff8cc6','#ffb3e0'] },
+    { xPct: 78, scale: 0.68, delay: 1800, colors: ['#d9a3ff','#c77dff','#e0b0ff','#b366ff','#eac4ff','#a64dff','#d18fff','#dbb3ff'] },
+    { xPct: 35, scale: 0.55, delay: 2800, colors: ['#ffc1a6','#ff9e73','#ffb08f','#ff8c5e','#ffd4bf','#ff7840','#ffa07a','#ffcab3'] },
+    { xPct: 68, scale: 0.58, delay: 3400, colors: ['#a6d9ff','#73bfff','#8fccff','#5eb0ff','#bfe4ff','#40a0ff','#7abfff','#b3daff'] },
+    { xPct: 10, scale: 0.48, delay: 4200, colors: ['#ffe0f0','#ffcce5','#ffd6eb','#ffb8d9','#ffe8f4','#ffa3cf','#ffc0e0','#ffdaef'] },
+    { xPct: 90, scale: 0.50, delay: 4800, colors: ['#c1ffc1','#99ff99','#aaffaa','#80ff80','#d4ffd4','#66ff66','#b3ffb3','#ccffcc'] },
+  ];
+
+  flowerDefs.forEach(def => {
+    const w = Math.round(320 * def.scale);
+    const h = Math.round(500 * def.scale);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'flower-svg');
+    svg.setAttribute('width', w);
+    svg.setAttribute('height', h);
+    svg.setAttribute('viewBox', '0 0 320 500');
+    svg.style.left = `calc(${def.xPct}% - ${w / 2}px)`;
+    container.appendChild(svg);
+
+    setTimeout(() => animateOneFlower(svg, def.colors), def.delay);
+  });
+}
+
+function animateOneFlower(svg, petalColors) {
+  svg.innerHTML = '';
   const ns = 'http://www.w3.org/2000/svg';
 
   // ── Stem ──
@@ -296,7 +330,6 @@ function growFlower() {
   ];
 
   // ── Petals ──
-  const petalColors = ['#ff7eb3','#ff5fa0','#ff9ec5','#f77fbe','#ffa0cc','#ff6b9d','#ff85b3','#ffaad4'];
   const petalCount = 8;
   const petals = [];
   for (let i = 0; i < petalCount; i++) {
@@ -307,7 +340,7 @@ function growFlower() {
     const e = document.createElementNS(ns, 'ellipse');
     e.setAttribute('cx', 0); e.setAttribute('cy', -28);
     e.setAttribute('rx', 0); e.setAttribute('ry', 0);
-    e.setAttribute('fill', petalColors[i]);
+    e.setAttribute('fill', petalColors[i % petalColors.length]);
     e.setAttribute('transform', `rotate(${angle})`);
     g.appendChild(e);
     svg.appendChild(g);
@@ -322,18 +355,16 @@ function growFlower() {
   center.style.opacity = 0;
   svg.appendChild(center);
 
-  // ── Animate! ──
+  // ── Animate ──
   const start = performance.now();
 
   function anim(now) {
     const t = now - start;
 
-    // Stem grows 0→1600ms
     const stemP = Math.min(t / 1600, 1);
     const eased = 1 - Math.pow(1 - stemP, 3);
     stem.setAttribute('y2', 500 - eased * 310);
 
-    // Leaves
     leaves.forEach(l => {
       const lt = Math.max(0, t - l.delay);
       const p = Math.min(lt / 500, 1);
@@ -343,7 +374,6 @@ function growFlower() {
       l.e.setAttribute('ry', ep * 10);
     });
 
-    // Petals
     petals.forEach(p => {
       const pt = Math.max(0, t - p.delay);
       const pr = Math.min(pt / 600, 1);
@@ -353,7 +383,6 @@ function growFlower() {
       p.e.setAttribute('ry', ep * 36);
     });
 
-    // Center
     const ct = Math.max(0, t - 2500);
     const cp = Math.min(ct / 400, 1);
     center.style.opacity = cp;
@@ -366,7 +395,11 @@ function growFlower() {
 }
 
 /* ═══════════════════════════════════════
-   Heart-shaped fireworks (canvas)
+   Heart-shaped fireworks + text firework
+   ─ First firework is a rocket that explodes
+     into particles forming "you're the best <3"
+   ─ The text particles stay forever
+   ─ Heart fireworks keep going in background
    ═══════════════════════════════════════ */
 function startHeartFireworks() {
   const canvas = document.getElementById('fireworks');
@@ -376,18 +409,89 @@ function startHeartFireworks() {
   resize();
   addEventListener('resize', resize);
 
-  const hearts = [];   // active heart bursts
+  const hearts = [];          // heart bursts (fade away)
+  let textParticles = [];     // text particles (stay forever)
+  let rocket = null;          // the initial rocket
 
-  // Heart parametric curve
+  // ── Sample text into pixel positions ──
+  function getTextPoints(text, centerX, centerY) {
+    const offscreen = document.createElement('canvas');
+    // Size the font relative to screen width
+    const fontSize = Math.min(Math.floor(W / 12), 72);
+    const oc = offscreen.getContext('2d');
+    oc.font = `bold ${fontSize}px 'Quicksand', sans-serif`;
+    const metrics = oc.measureText(text);
+    const tw = Math.ceil(metrics.width) + 20;
+    const th = fontSize * 1.6;
+    offscreen.width = tw;
+    offscreen.height = th;
+    oc.font = `bold ${fontSize}px 'Quicksand', sans-serif`;
+    oc.fillStyle = '#fff';
+    oc.textBaseline = 'middle';
+    oc.textAlign = 'center';
+    oc.fillText(text, tw / 2, th / 2);
+
+    const data = oc.getImageData(0, 0, tw, th).data;
+    const points = [];
+    const step = Math.max(3, Math.floor(fontSize / 14));  // sampling density
+    for (let y = 0; y < th; y += step) {
+      for (let x = 0; x < tw; x += step) {
+        if (data[(y * tw + x) * 4 + 3] > 128) {
+          points.push({
+            x: centerX + (x - tw / 2),
+            y: centerY + (y - th / 2)
+          });
+        }
+      }
+    }
+    return points;
+  }
+
+  // ── Launch the text rocket ──
+  function launchTextRocket() {
+    const targetY = H * 0.32;
+    rocket = {
+      x: W / 2,
+      y: H + 10,
+      targetY: targetY,
+      speed: 0,
+      sparkTimer: 0,
+      sparks: [],
+      done: false
+    };
+  }
+
+  // ── Explode rocket into text particles ──
+  function explodeIntoText() {
+    const points = getTextPoints("you're the best <3", W / 2, H * 0.32);
+    const hues = [330, 340, 350, 310, 320]; // pink spectrum
+    textParticles = points.map(p => ({
+      // start from rocket position, animate toward target
+      x: rocket.x + (Math.random() - 0.5) * 60,
+      y: rocket.y + (Math.random() - 0.5) * 60,
+      tx: p.x,
+      ty: p.y,
+      r: 1.4 + Math.random() * 1.0,
+      progress: 0,
+      speed: 0.008 + Math.random() * 0.012,
+      hue: hues[Math.floor(Math.random() * hues.length)] + Math.random() * 20 - 10,
+      settled: false,
+      shimmer: Math.random() * Math.PI * 2,  // for gentle glow once settled
+      shimmerSpeed: 0.02 + Math.random() * 0.02
+    }));
+    rocket = null;
+  }
+
+  // ── Heart parametric curve ──
   function heartPoint(t, scale) {
     const x = 16 * Math.pow(Math.sin(t), 3);
     const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
     return { x: x * scale, y: y * scale };
   }
 
-  // Create a heart burst
+  // ── Create a heart burst ──
   function spawnHeart(cx, cy) {
-    const hue = 320 + Math.random() * 50;        // pinks/reds
+    const hue = 320 + Math.random() * 50;
     const scale = 1.8 + Math.random() * 2.2;
     const particles = [];
     const count = 80;
@@ -401,42 +505,134 @@ function startHeartFireworks() {
         progress: 0,
         speed: 0.012 + Math.random() * 0.008,
         hue: hue + Math.random() * 20 - 10,
-        alpha: 1,
-        trail: []
+        alpha: 1
       });
     }
     hearts.push({ particles, age: 0 });
   }
 
-  // Spawn hearts periodically
+  // ── Spawn 2-3 hearts at once ──
   let spawnTimer = 0;
+  let heartsStarted = false;
   function maybeSpawn(dt) {
+    if (!heartsStarted) return;
     spawnTimer += dt;
-    if (spawnTimer > 800) {       // new heart every ~0.8s
+    const interval = 900 + Math.random() * 400;
+    if (spawnTimer > interval) {
       spawnTimer = 0;
-      const cx = W * 0.15 + Math.random() * W * 0.7;
-      const cy = H * 0.1 + Math.random() * H * 0.45;
-      spawnHeart(cx, cy);
+      const burstCount = Math.random() < 0.5 ? 2 : 3;
+      for (let b = 0; b < burstCount; b++) {
+        const cx = W * 0.1 + Math.random() * W * 0.8;
+        const cy = H * 0.08 + Math.random() * H * 0.45;
+        spawnHeart(cx, cy);
+      }
     }
   }
 
-  // Also spawn first ones quickly
-  setTimeout(() => spawnHeart(W * 0.3, H * 0.3), 300);
-  setTimeout(() => spawnHeart(W * 0.7, H * 0.25), 700);
-  setTimeout(() => spawnHeart(W * 0.5, H * 0.15), 1200);
+  // Start hearts immediately alongside the rocket
+  heartsStarted = true;
+  setTimeout(() => { spawnHeart(W * 0.2, H * 0.25); spawnHeart(W * 0.8, H * 0.2); }, 200);
+  setTimeout(() => { spawnHeart(W * 0.65, H * 0.35); spawnHeart(W * 0.35, H * 0.18); }, 600);
+
+  // Launch the text rocket right away
+  launchTextRocket();
 
   let last = performance.now();
   function loop(now) {
     const dt = now - last;
     last = now;
 
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(10,10,10,0.18)';
-    ctx.fillRect(0, 0, W, H);
+    ctx.clearRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
 
     maybeSpawn(dt);
 
+    // ── Draw the rocket ──
+    if (rocket && !rocket.done) {
+      // Move rocket upward with acceleration
+      rocket.speed += 0.35;
+      rocket.y -= rocket.speed;
+
+      // Rocket spark trail
+      rocket.sparkTimer += dt;
+      if (rocket.sparkTimer > 20) {
+        rocket.sparkTimer = 0;
+        for (let i = 0; i < 3; i++) {
+          rocket.sparks.push({
+            x: rocket.x + (Math.random() - 0.5) * 6,
+            y: rocket.y + Math.random() * 10,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: Math.random() * 2 + 1,
+            alpha: 1,
+            r: 1 + Math.random() * 1.5,
+            hue: 30 + Math.random() * 30 // golden sparks
+          });
+        }
+      }
+
+      // Update & draw sparks
+      for (let i = rocket.sparks.length - 1; i >= 0; i--) {
+        const s = rocket.sparks[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        s.alpha -= 0.03;
+        if (s.alpha <= 0) { rocket.sparks.splice(i, 1); continue; }
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${s.hue},100%,70%,${s.alpha})`;
+        ctx.fill();
+      }
+
+      // Draw rocket head
+      ctx.beginPath();
+      ctx.arc(rocket.x, rocket.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(rocket.x, rocket.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,200,100,0.3)';
+      ctx.fill();
+
+      // Explode when reaching target
+      if (rocket.y <= rocket.targetY) {
+        explodeIntoText();
+      }
+    }
+
+    // ── Draw text particles ──
+    if (textParticles.length > 0) {
+      textParticles.forEach(p => {
+        if (!p.settled) {
+          p.progress = Math.min(p.progress + p.speed, 1);
+          const ease = 1 - Math.pow(1 - p.progress, 3);
+          p.x = p.x + (p.tx - p.x) * ease;
+          p.y = p.y + (p.ty - p.y) * ease;
+          if (p.progress >= 1) {
+            p.settled = true;
+            p.x = p.tx;
+            p.y = p.ty;
+          }
+        }
+
+        // Gentle shimmer once settled
+        p.shimmer += p.shimmerSpeed;
+        const glow = p.settled ? 0.7 + 0.3 * Math.sin(p.shimmer) : 1;
+
+        // draw particle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue},100%,78%,${glow})`;
+        ctx.fill();
+
+        // soft glow
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue},100%,65%,${glow * 0.15})`;
+        ctx.fill();
+      });
+    }
+
+    // ── Draw heart bursts ──
     for (let h = hearts.length - 1; h >= 0; h--) {
       const heart = hearts[h];
       heart.age += dt;
@@ -451,34 +647,18 @@ function startHeartFireworks() {
         const cx = p.x + (p.tx - p.x) * ease;
         const cy = p.y + (p.ty - p.y) * ease;
 
-        // fade after reaching target
         if (p.progress >= 1) {
-          p.alpha -= 0.012;
+          p.alpha -= 0.015;
         }
 
-        // trail
-        p.trail.push({ x: cx, y: cy, a: p.alpha });
-        if (p.trail.length > 8) p.trail.shift();
-
-        // draw trail
-        p.trail.forEach((tp, i) => {
-          const ta = tp.a * (i / p.trail.length) * 0.4;
-          ctx.beginPath();
-          ctx.arc(tp.x, tp.y, p.r * 0.6, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${p.hue},100%,72%,${ta})`;
-          ctx.fill();
-        });
-
-        // draw particle
         ctx.beginPath();
         ctx.arc(cx, cy, p.r, 0, Math.PI * 2);
         ctx.fillStyle = `hsla(${p.hue},100%,78%,${Math.max(0, p.alpha)})`;
         ctx.fill();
 
-        // glow
         ctx.beginPath();
         ctx.arc(cx, cy, p.r * 3, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue},100%,65%,${Math.max(0, p.alpha * 0.15)})`;
+        ctx.fillStyle = `hsla(${p.hue},100%,65%,${Math.max(0, p.alpha * 0.12)})`;
         ctx.fill();
       });
 
