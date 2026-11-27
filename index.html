@@ -101,29 +101,30 @@
   }
 
 
-  /* ─── Missed Screen ─── */
-  #missed-screen {
+  /* ─── No Screen (single flower + gentle message) ─── */
+  #no-screen {
     display: none;
+    width: 100%;
+    height: 100vh;
+    position: relative;
     text-align: center;
     animation: fadeInSoft 0.8s ease;
   }
 
-  #missed-screen h1 {
-    font-size: 2.2rem;
-    color: #888;
-    margin-bottom: 0.5em;
+  .no-message {
+    position: relative;
+    z-index: 3;
+    padding: 16vh 1.5rem 0;
   }
 
-  #missed-screen p {
-    font-size: 1.1rem;
-    color: #555;
-    margin-bottom: 2em;
-  }
-
-  #missed-screen .btn {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
-    color: #fff;
-    box-shadow: 0 4px 24px rgba(240,147,251,0.25);
+  .no-message p {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 14px rgba(255, 154, 158, 0.25));
   }
 
   /* ─── Sparkle dots in background ─── */
@@ -163,8 +164,7 @@
       /* smaller on mobile */
     }
 
-    #missed-screen h1 { font-size: 1.6rem; }
-    #missed-screen p  { font-size: 1rem; }
+    .no-message p { font-size: 1.3rem; }
   }
 
   @media (max-width: 380px) {
@@ -183,11 +183,11 @@
 
 <!-- ── Screen 1: Question ── -->
 <div id="question-screen">
-  <h1>✨ Hey you ✨</h1>
-  <p>Do you want to see something magic?</p>
+  <h1>✨ Hey ✨</h1>
+  <p>Did you pass your test?</p>
   <div class="btn-row">
     <button class="btn btn-yes" onclick="showMagic()">Yes 💖</button>
-    <button class="btn btn-no"  onclick="showMissed()">No</button>
+    <button class="btn btn-no"  onclick="showNo()">No</button>
   </div>
 </div>
 
@@ -197,12 +197,12 @@
   <div class="flower-container" id="flower-container"></div>
 </div>
 
-<!-- ── Screen 3: Missed ── -->
-<div id="missed-screen">
-  <h1>😢</h1>
-  <h1>You missed something beautiful…</h1>
-  <p>Maybe next time you'll say yes 💔</p>
-  <button class="btn" onclick="goBack()">Let me try again</button>
+<!-- ── Screen 3: No (single flower) ── -->
+<div id="no-screen">
+  <div class="no-message">
+    <p>you get it next time no worries &lt;3</p>
+  </div>
+  <div class="flower-container" id="no-flower-container"></div>
 </div>
 
 <script>
@@ -245,33 +245,25 @@ function showMagic() {
   document.getElementById('question-screen').style.display = 'none';
   const ms = document.getElementById('magic-screen');
   ms.style.display = 'block';
-  growFlowers();
+  growFlowers('flower-container', false);
   startHeartFireworks();
 }
 
-function showMissed() {
+function showNo() {
   document.getElementById('question-screen').style.display = 'none';
-  document.getElementById('missed-screen').style.display = 'block';
-}
-
-function goBack() {
-  document.getElementById('missed-screen').style.display = 'none';
-  const qs = document.getElementById('question-screen');
-  qs.style.display = 'block';
-  qs.style.animation = 'none';
-  void qs.offsetHeight;          // reflow
-  qs.style.animation = 'fadeInSoft 0.8s ease';
+  document.getElementById('no-screen').style.display = 'block';
+  growFlowers('no-flower-container', true);
 }
 
 /* ═══════════════════════════════════════
-   SVG Flowers – multiple, with staggered growth
+   SVG Flowers – single or multiple, with staggered growth
    ═══════════════════════════════════════ */
-function growFlowers() {
-  const container = document.getElementById('flower-container');
+function growFlowers(containerId, single = false) {
+  const container = document.getElementById(containerId);
   container.innerHTML = '';
 
   // Define flower placements: x% position, scale, delay (ms), and color palette
-  const flowerDefs = [
+  const allFlowers = [
     { xPct: 50, scale: 1.0,  delay: 0,    colors: ['#ff7eb3','#ff5fa0','#ff9ec5','#f77fbe','#ffa0cc','#ff6b9d','#ff85b3','#ffaad4'] },
     { xPct: 20, scale: 0.72, delay: 1200, colors: ['#ffb3d9','#ff80bf','#ff99cc','#ff66b2','#ffcce0','#ff4da6','#ff8cc6','#ffb3e0'] },
     { xPct: 78, scale: 0.68, delay: 1800, colors: ['#d9a3ff','#c77dff','#e0b0ff','#b366ff','#eac4ff','#a64dff','#d18fff','#dbb3ff'] },
@@ -280,6 +272,8 @@ function growFlowers() {
     { xPct: 10, scale: 0.48, delay: 4200, colors: ['#ffe0f0','#ffcce5','#ffd6eb','#ffb8d9','#ffe8f4','#ffa3cf','#ffc0e0','#ffdaef'] },
     { xPct: 90, scale: 0.50, delay: 4800, colors: ['#c1ffc1','#99ff99','#aaffaa','#80ff80','#d4ffd4','#66ff66','#b3ffb3','#ccffcc'] },
   ];
+
+  const flowerDefs = single ? [allFlowers[0]] : allFlowers;
 
   flowerDefs.forEach(def => {
     const w = Math.round(320 * def.scale);
@@ -397,7 +391,8 @@ function animateOneFlower(svg, petalColors) {
 /* ═══════════════════════════════════════
    Heart-shaped fireworks + text firework
    ─ First firework is a rocket that explodes
-     into particles forming "you're the best <3"
+     into particles forming "congratulations"
+     and "check your rbx :) <3"
    ─ The text particles stay forever
    ─ Heart fireworks keep going in background
    ═══════════════════════════════════════ */
@@ -413,16 +408,27 @@ function startHeartFireworks() {
   let textParticles = [];     // text particles (stay forever)
   let rocket = null;          // the initial rocket
 
-  // ── Sample text into pixel positions ──
-  function getTextPoints(text, centerX, centerY) {
+  // ── Fit font size so text stays inside the viewport width ──
+  function fitFontSize(text, maxFontSize, maxWidth) {
     const offscreen = document.createElement('canvas');
-    // Size the font relative to screen width
-    const fontSize = Math.min(Math.floor(W / 12), 72);
+    const oc = offscreen.getContext('2d');
+    let fontSize = maxFontSize;
+    while (fontSize > 16) {
+      oc.font = `bold ${fontSize}px 'Quicksand', sans-serif`;
+      if (oc.measureText(text).width <= maxWidth) break;
+      fontSize -= 2;
+    }
+    return fontSize;
+  }
+
+  // ── Sample text into pixel positions ──
+  function getTextPoints(text, centerX, centerY, fontSize) {
+    const offscreen = document.createElement('canvas');
     const oc = offscreen.getContext('2d');
     oc.font = `bold ${fontSize}px 'Quicksand', sans-serif`;
     const metrics = oc.measureText(text);
     const tw = Math.ceil(metrics.width) + 20;
-    const th = fontSize * 1.6;
+    const th = Math.ceil(fontSize * 1.6);
     offscreen.width = tw;
     offscreen.height = th;
     oc.font = `bold ${fontSize}px 'Quicksand', sans-serif`;
@@ -433,7 +439,7 @@ function startHeartFireworks() {
 
     const data = oc.getImageData(0, 0, tw, th).data;
     const points = [];
-    const step = Math.max(3, Math.floor(fontSize / 14));  // sampling density
+    const step = Math.max(2, Math.floor(fontSize / 15));  // sampling density
     for (let y = 0; y < th; y += step) {
       for (let x = 0; x < tw; x += step) {
         if (data[(y * tw + x) * 4 + 3] > 128) {
@@ -449,7 +455,7 @@ function startHeartFireworks() {
 
   // ── Launch the text rocket ──
   function launchTextRocket() {
-    const targetY = H * 0.32;
+    const targetY = H * 0.28;
     rocket = {
       x: W / 2,
       y: H + 10,
@@ -461,9 +467,19 @@ function startHeartFireworks() {
     };
   }
 
-  // ── Explode rocket into text particles ──
+  // ── Explode rocket into two-line text particles ──
   function explodeIntoText() {
-    const points = getTextPoints("you're the best <3", W / 2, H * 0.32);
+    const topText = 'congratulations';
+    const subText = 'check your rbx :) <3';
+    const maxW = W * 0.88;
+    const topSize = fitFontSize(topText, Math.min(Math.floor(W / 10), 72), maxW);
+    const subSize = fitFontSize(subText, Math.round(topSize * 0.8), maxW);
+    const topY = H * 0.23;
+    const subY = topY + topSize * 1.3;
+    const points = [
+      ...getTextPoints(topText, W / 2, topY, topSize),
+      ...getTextPoints(subText, W / 2, subY, subSize),
+    ];
     const hues = [330, 340, 350, 310, 320]; // pink spectrum
     textParticles = points.map(p => ({
       // start from rocket position, animate toward target
