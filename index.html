@@ -23,25 +23,22 @@
   /* ─── Question Screen ─── */
   #question-screen {
     text-align: center;
+    padding: 0 1.5rem;
+    max-width: 720px;
     animation: fadeInSoft 1.2s ease;
   }
 
   #question-screen h1 {
-    font-size: 2.4rem;
+    font-size: 2.3rem;
     font-weight: 700;
-    margin-bottom: 0.4em;
+    line-height: 1.3;
+    margin-bottom: 1.5em;
     background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
-  #question-screen p {
-    font-size: 1.15rem;
-    color: #bbb;
-    margin-bottom: 2em;
-  }
-
-  .btn-row { display: flex; gap: 1.2rem; justify-content: center; }
+  .btn-row { display: flex; justify-content: center; }
 
   .btn {
     padding: 0.75em 2.4em;
@@ -61,13 +58,6 @@
     color: #fff;
     box-shadow: 0 4px 24px rgba(240,147,251,0.35);
   }
-
-  .btn-no {
-    background: rgba(255,255,255,0.08);
-    color: #ccc;
-    border: 1px solid rgba(255,255,255,0.15);
-  }
-  .btn-no:hover { background: rgba(255,255,255,0.14); }
 
   /* ─── Magic Screen (flower + hearts) ─── */
   #magic-screen {
@@ -101,32 +91,6 @@
   }
 
 
-  /* ─── No Screen (single flower + gentle message) ─── */
-  #no-screen {
-    display: none;
-    width: 100%;
-    height: 100vh;
-    position: relative;
-    text-align: center;
-    animation: fadeInSoft 0.8s ease;
-  }
-
-  .no-message {
-    position: relative;
-    z-index: 3;
-    padding: 16vh 1.5rem 0;
-  }
-
-  .no-message p {
-    font-size: 1.75rem;
-    font-weight: 600;
-    line-height: 1.4;
-    background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 2px 14px rgba(255, 154, 158, 0.25));
-  }
-
   /* ─── Sparkle dots in background ─── */
   .stars {
     position: fixed;
@@ -150,21 +114,12 @@
 
   @media (max-width: 600px) {
     #question-screen h1 { font-size: 1.7rem; }
-    #question-screen p  { font-size: 1rem; margin-bottom: 1.6em; }
 
     .btn {
       padding: 0.85em 2.2em;
       font-size: 1rem;
       min-height: 48px;          /* comfortable tap target */
     }
-
-    .btn-row { gap: 0.9rem; }
-
-    .flower-svg {
-      /* smaller on mobile */
-    }
-
-    .no-message p { font-size: 1.3rem; }
   }
 
   @media (max-width: 380px) {
@@ -181,13 +136,11 @@
 <!-- tiny ambient sparkles -->
 <canvas class="stars" id="starsCanvas"></canvas>
 
-<!-- ── Screen 1: Question ── -->
+<!-- ── Screen 1: Congratulations ── -->
 <div id="question-screen">
-  <h1>✨ Hey ✨</h1>
-  <p>Did you pass your test?</p>
+  <h1>congratulations on passing your test loutje :)</h1>
   <div class="btn-row">
-    <button class="btn btn-yes" onclick="showMagic()">Yes 💖</button>
-    <button class="btn btn-no"  onclick="showNo()">No</button>
+    <button class="btn btn-yes" onclick="showMagic()">claim your gift 🎁</button>
   </div>
 </div>
 
@@ -195,14 +148,6 @@
 <div id="magic-screen">
   <canvas id="fireworks"></canvas>
   <div class="flower-container" id="flower-container"></div>
-</div>
-
-<!-- ── Screen 3: No (single flower) ── -->
-<div id="no-screen">
-  <div class="no-message">
-    <p>you get it next time no worries &lt;3</p>
-  </div>
-  <div class="flower-container" id="no-flower-container"></div>
 </div>
 
 <script>
@@ -245,25 +190,19 @@ function showMagic() {
   document.getElementById('question-screen').style.display = 'none';
   const ms = document.getElementById('magic-screen');
   ms.style.display = 'block';
-  growFlowers('flower-container', false);
+  growFlowers('flower-container');
   startHeartFireworks();
 }
 
-function showNo() {
-  document.getElementById('question-screen').style.display = 'none';
-  document.getElementById('no-screen').style.display = 'block';
-  growFlowers('no-flower-container', true);
-}
-
 /* ═══════════════════════════════════════
-   SVG Flowers – single or multiple, with staggered growth
+   SVG Flowers with staggered growth
    ═══════════════════════════════════════ */
-function growFlowers(containerId, single = false) {
+function growFlowers(containerId) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
 
   // Define flower placements: x% position, scale, delay (ms), and color palette
-  const allFlowers = [
+  const flowerDefs = [
     { xPct: 50, scale: 1.0,  delay: 0,    colors: ['#ff7eb3','#ff5fa0','#ff9ec5','#f77fbe','#ffa0cc','#ff6b9d','#ff85b3','#ffaad4'] },
     { xPct: 20, scale: 0.72, delay: 1200, colors: ['#ffb3d9','#ff80bf','#ff99cc','#ff66b2','#ffcce0','#ff4da6','#ff8cc6','#ffb3e0'] },
     { xPct: 78, scale: 0.68, delay: 1800, colors: ['#d9a3ff','#c77dff','#e0b0ff','#b366ff','#eac4ff','#a64dff','#d18fff','#dbb3ff'] },
@@ -272,8 +211,6 @@ function growFlowers(containerId, single = false) {
     { xPct: 10, scale: 0.48, delay: 4200, colors: ['#ffe0f0','#ffcce5','#ffd6eb','#ffb8d9','#ffe8f4','#ffa3cf','#ffc0e0','#ffdaef'] },
     { xPct: 90, scale: 0.50, delay: 4800, colors: ['#c1ffc1','#99ff99','#aaffaa','#80ff80','#d4ffd4','#66ff66','#b3ffb3','#ccffcc'] },
   ];
-
-  const flowerDefs = single ? [allFlowers[0]] : allFlowers;
 
   flowerDefs.forEach(def => {
     const w = Math.round(320 * def.scale);
